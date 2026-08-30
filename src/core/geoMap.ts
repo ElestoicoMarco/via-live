@@ -25,10 +25,10 @@ export class GeoMapEngine {
       attributionControl: false
     });
 
-    // Tiles CartoDB Dark Matter (Renderizado oscuro de alta fidelidad)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+    // Tiles OpenStreetMap (Máxima fiabilidad, nunca bloquea)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd'
+      attribution: '© OpenStreetMap'
     }).addTo(this.map);
 
     this.markersLayer.addTo(this.map);

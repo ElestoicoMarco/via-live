@@ -1,6 +1,7 @@
 import { $, $$, escapeHTML, formatDistance, timeAgo, triggerHaptic, fmtTime, fmtLat, fmtLng, toast } from '../utils/helpers';
-import { state, USER } from '../store/state';
+import { state } from '../store/state';
 import { TYPE_META, SEV_LABELS, Incident } from '../types/incident';
+import { GPSService } from '../services/gps';
 
 
 export const sheetOverlay = $('#sheetOverlay');
