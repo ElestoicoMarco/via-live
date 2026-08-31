@@ -102,9 +102,10 @@ export function updateReportStats() {
 }
 
 export function updateReadout() {
-  $('#readout').innerHTML = `${fmtLat(USER.lat)} · ${fmtLng(USER.lng)}<br>GPS ±${USER.accuracy} m · DEMO`;
-  $('#setGPS').textContent = `${fmtLat(USER.lat)} · ${fmtLng(USER.lng)}`;
-  $('#setAcc').textContent = `±${USER.accuracy} m`;
+  const pos = GPSService.getUserPosition();
+  $('#readout').innerHTML = `${fmtLat(pos.lat)} · ${fmtLng(pos.lng)}<br>GPS ±${pos.accuracy} m · DEMO`;
+  $('#setGPS').textContent = `${fmtLat(pos.lat)} · ${fmtLng(pos.lng)}`;
+  $('#setAcc').textContent = `±${pos.accuracy} m`;
 }
 
 export function flashSync() {

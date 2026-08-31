@@ -10,6 +10,9 @@ export class GPSService {
 
   public static startWatching(onUpdate: (pos: UserPosition) => void) {
     if (!('geolocation' in navigator)) return;
+    
+    // Llamada inmediata para inicializar la UI mientras se busca satélite
+    onUpdate(this.userPos);
 
     this.watchId = navigator.geolocation.watchPosition(
       (pos) => {
