@@ -43,6 +43,24 @@ app.get('/api/tomtom', async (req, res) => {
   }
 });
 
+// Endpoint avanzado de Navegación GIS (Routing API)
+app.get('/api/route', async (req, res) => {
+  const apiKey = process.env.TOMTOM_API_KEY;
+  const { start, end } = req.query; // formato: lat,lng
+  if (!start || !end) return res.status(400).json({ error: "Faltan coordenadas start/end" });
+
+  try {
+    const url = `https://api.tomtom.com/routing/1/calculateRoute/${start}:${end}/json?key=${apiKey}&traffic=true&travelMode=car`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`TomTom Routing HTTP ${response.status}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Error GIS Routing:", error);
+    res.status(500).json({ error: "Error calculando la ruta óptima" });
+  }
+});
+
 // Servir la PWA en Producción
 app.use(express.static(path.join(__dirname, '../dist')));
 // SPA Fallback - RUTA CORRECTA

@@ -6,6 +6,7 @@ export class GeoMapEngine {
   private map: L.Map | null = null;
   private markersLayer: L.LayerGroup = L.layerGroup();
   private polylinesLayer: L.LayerGroup = L.layerGroup();
+  private activeRouteLayer: L.LayerGroup = L.layerGroup();
   private userMarker: L.CircleMarker | null = null;
   private onIncidentSelect: (id: string) => void;
   private onMapLongPress: (lat: number, lng: number) => void;
@@ -14,6 +15,20 @@ export class GeoMapEngine {
     this.onIncidentSelect = onIncidentSelect;
     this.onMapLongPress = onMapLongPress;
     this.initMap(containerId);
+  }
+
+  public renderActiveRoute(pts: [number, number][]) {
+    this.activeRouteLayer.clearLayers();
+    if (!pts || pts.length < 2) return;
+    
+    // Borde oscuro para contraste
+    L.polyline(pts, { color: '#0d1117', weight: 8, opacity: 0.8 }).addTo(this.activeRouteLayer);
+    // Ruta principal azul
+    L.polyline(pts, { color: '#3b82f6', weight: 5, opacity: 0.9 }).addTo(this.activeRouteLayer);
+    
+    // Marcador destino
+    const dest = pts[pts.length - 1];
+    L.circleMarker(dest, { radius: 7, fillColor: '#10b981', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(this.activeRouteLayer);
   }
 
   private initMap(containerId: string) {
@@ -33,6 +48,7 @@ export class GeoMapEngine {
 
     this.markersLayer.addTo(this.map);
     this.polylinesLayer.addTo(this.map);
+    this.activeRouteLayer.addTo(this.map);
 
     this.map.on('contextmenu', (e: L.LeafletMouseEvent) => {
       this.onMapLongPress(e.latlng.lat, e.latlng.lng);

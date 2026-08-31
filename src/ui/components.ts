@@ -175,6 +175,19 @@ export function buildPDF(list: Incident[], subtitle: string) {
 
 export function initUI() {
   document.getElementById('admCancel')?.addEventListener('click', () => document.getElementById('adminModal')?.classList.remove('open'));
+  
+  document.getElementById('admNav')?.addEventListener('click', () => {
+    if (!pendingManualCoords) return;
+    const { lat: dLat, lng: dLng } = pendingManualCoords;
+    const pos = GPSService.getUserPosition();
+    document.getElementById('adminModal')?.classList.remove('open');
+    
+    import('../services/navigation').then(nav => {
+      nav.unlockTTS(); // Habilita audio
+      nav.calculateRoute(pos.lat, pos.lng, dLat, dLng);
+    });
+  });
+
   document.getElementById('admSave')?.addEventListener('click', () => {
      if (!pendingManualCoords) return;
      const type = (document.getElementById('admType') as HTMLSelectElement).value;
