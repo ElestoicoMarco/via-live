@@ -16,37 +16,73 @@ export function openAdminModal(lat: number, lng: number) {
   document.getElementById('adminModal')?.classList.add('open');
 }
 export function openSheet(id: string) {
-  const inc = state.incidents.find(i => i.id === id); if (!inc) return;
-  sheetIncident = inc;
-  const m = TYPE_META[inc.type];
-  const badge = $('#shBadge');
-  badge.className = `badge t-${inc.type}`;
-  badge.innerHTML = `<svg class="ic"><use href="#${m.icon}"/></svg><span>${m.label.toUpperCase()}</span>`;
-  $('#shTitle').textContent = inc.roadName;
-  $('#shDesc').textContent = inc.description;
-  $('#shDist').textContent = inc.distanceUserKm != null
-    ? `${formatDistance(inc.distanceUserKm)} de tu posición` : '—';
-  
-  const sev = $('#shSev'); sev.className = 'sev-meter lv' + inc.severity; sev.innerHTML = '';
-  for (let k = 0; k < 4; k++) { 
-    const s = document.createElement('i'); if (k < inc.severity) s.classList.add('on'); sev.appendChild(s); 
-  }
-  $('#shSevTxt').textContent = `${inc.severity}/4 · ${SEV_LABELS[inc.severity]}`;
-  $('#shStart').textContent = fmtTime(inc.startTime) + ` (${timeAgo(inc.startTime)})`;
-  
-  const shEnd = $('#shEnd');
-  if (shEnd) shEnd.textContent = inc.endTime ? fmtTime(inc.endTime) : 'Sin estimación';
-  
-  const shCoords = $('#shCoords');
-  if (shCoords && inc.location) shCoords.textContent = `${fmtLat(inc.location.lat)} · ${fmtLng(inc.location.lng)}`;
+  try {
+    const inc = state.incidents.find(i => i.id === id); 
+    if (!inc) {
+      toast('Incidente no encontrado', 'err');
+      return;
+    }
+    sheetIncident = inc;
+    const m = TYPE_META[inc.type] || TYPE_META.UNKNOWN;
+    
+    const badge = document.getElementById('shBadge');
+    if (badge) {
+      badge.className = `badge t-${inc.type}`;
+      badge.innerHTML = `<svg class="ic"><use href="#${m.icon}"/></svg><span>${m.label.toUpperCase()}</span>`;
+    }
+    
+    const elTitle = document.getElementById('shTitle');
+    if (elTitle) elTitle.textContent = inc.roadName || 'Sin Nombre';
+    
+    const elDesc = document.getElementById('shDesc');
+    if (elDesc) elDesc.textContent = inc.description || 'Sin descripción';
+    
+    const elDist = document.getElementById('shDist');
+    if (elDist) {
+      elDist.textContent = inc.distanceUserKm != null
+        ? `${formatDistance(inc.distanceUserKm)} de tu posición` : '--';
+    }
+    
+    const sev = document.getElementById('shSev');
+    const sevLevel = inc.severity || 1;
+    if (sev) {
+      sev.className = 'sev-meter lv' + sevLevel; 
+      sev.innerHTML = '';
+      for (let k = 0; k < 4; k++) { 
+        const s = document.createElement('i'); 
+        if (k < sevLevel) s.classList.add('on'); 
+        sev.appendChild(s); 
+      }
+    }
+    
+    const elSevTxt = document.getElementById('shSevTxt');
+    if (elSevTxt) elSevTxt.textContent = `${sevLevel}/4 · ${SEV_LABELS[sevLevel] || 'Desconocida'}`;
+    
+    const elStart = document.getElementById('shStart');
+    if (elStart) elStart.textContent = inc.startTime ? `${fmtTime(inc.startTime)} (${timeAgo(inc.startTime)})` : '--';
+    
+    const shEnd = document.getElementById('shEnd');
+    if (shEnd) shEnd.textContent = inc.endTime ? fmtTime(inc.endTime) : 'Sin estimación';
+    
+    const shCoords = document.getElementById('shCoords');
+    if (shCoords && inc.location) shCoords.textContent = `${fmtLat(inc.location.lat)} · ${fmtLng(inc.location.lng)}`;
 
-  if (inc.type === 'ROAD_CLOSED' || inc.severity >= 3) triggerHaptic('danger');
-  else if (inc.severity >= 2) triggerHaptic('warning');
-  sheetOverlay.classList.add('open');
+    if (inc.type === 'ROAD_CLOSED' || sevLevel >= 3) triggerHaptic('danger');
+    else if (sevLevel >= 2) triggerHaptic('warning');
+    else triggerHaptic('tap');
+    
+    const overlay = document.getElementById('sheetOverlay');
+    if (overlay) overlay.classList.add('open');
+    else console.error('No se encontró #sheetOverlay en el DOM');
+    
+  } catch (err) {
+    console.error('Error abriendo sheet:', err);
+    toast('Error abriendo información', 'err');
+  }
 }
 
 export function closeSheet() {
-  sheetOverlay.classList.remove('open');
+  document.getElementById('sheetOverlay')?.classList.remove('open');
   sheetIncident = null;
 }
 
