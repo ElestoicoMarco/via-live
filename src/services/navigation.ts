@@ -73,6 +73,7 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
 
     mapEngine.renderActiveRoute(polylinePts);
     startNavigationMode();
+    updateNavigationProgress(startLat, startLng);
 
     if (!isRecalculation) {
       triggerMultimediaAlert({
@@ -93,15 +94,15 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
 
 function startNavigationMode() {
   isNavigating = true;
-  $('#navHud').hidden = false;
-  $('#btnEndNav').addEventListener('click', stopNavigation, { once: true });
+  document.getElementById('navHud')?.classList.add('show');
+  document.getElementById('btnEndNav')?.addEventListener('click', stopNavigation, { once: true });
 }
 
 export function stopNavigation() {
   isNavigating = false;
   activeRouteGeoJSON = null;
   currentDestination = null;
-  $('#navHud').hidden = true;
+  document.getElementById('navHud')?.classList.remove('show');
   mapEngine.renderActiveRoute([]);
   triggerHaptic('tap');
 }
