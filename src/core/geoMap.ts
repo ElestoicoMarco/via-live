@@ -10,6 +10,7 @@ export class GeoMapEngine {
   private userMarker: L.CircleMarker | null = null;
   private onIncidentSelect: (id: string) => void;
   private onMapLongPress: (lat: number, lng: number) => void;
+  private isAutoTracking = false;
 
   constructor(containerId: string, onIncidentSelect: (id: string) => void, onMapLongPress: (lat: number, lng: number) => void) {
     this.onIncidentSelect = onIncidentSelect;
@@ -17,14 +18,49 @@ export class GeoMapEngine {
     this.initMap(containerId);
   }
 
-  public renderActiveRoute(pts: [number, number][]) {
+  public enableAutoTracking() {
+    this.isAutoTracking = true;
+    if (this.userMarker && this.map) {
+      const pos = this.userMarker.getLatLng();
+      this.map.flyTo(pos, 17, { duration: 1.0 }); // Zoom de conducción
+    }
+  }
+
+  public disableAutoTracking() {
+    this.isAutoTracking = false;
+  }
+
+  public fitBounds(pts: [number, number][]) {
+    if (!this.map || pts.length === 0) return;
+    this.map.fitBounds(L.polyline(pts).getBounds(), { padding: [50, 50], animate: true });
+  }
+
+  public renderActiveRoute(pts: [number, number][], trafficSegments: any[] = []) {
     this.activeRouteLayer.clearLayers();
     if (!pts || pts.length < 2) return;
     
-    // Borde oscuro para contraste
+    // Borde oscuro global para la ruta
     L.polyline(pts, { color: '#0d1117', weight: 8, opacity: 0.8 }).addTo(this.activeRouteLayer);
-    // Ruta principal azul
-    L.polyline(pts, { color: '#3b82f6', weight: 5, opacity: 0.9 }).addTo(this.activeRouteLayer);
+    
+    if (trafficSegments && trafficSegments.length > 0) {
+      // Dibujar por segmentos de colores
+      trafficSegments.forEach((sec: any) => {
+        const segPts = pts.slice(sec.startPointIndex, sec.endPointIndex + 1);
+        let color = '#3b82f6'; // Free flow (blue)
+        const delay = sec.delayInSeconds || 0;
+        const speed = sec.effectiveSpeedInKmh || 50;
+
+        if (delay > 0) {
+          if (speed < 15) color = '#f85149'; // Rojo (Atasco)
+          else if (speed < 35) color = '#d29922'; // Amarillo (Lento)
+        }
+        
+        L.polyline(segPts, { color, weight: 5, opacity: 0.9 }).addTo(this.activeRouteLayer);
+      });
+    } else {
+      // Ruta principal azul (fallback si no hay segmentos)
+      L.polyline(pts, { color: '#3b82f6', weight: 5, opacity: 0.9 }).addTo(this.activeRouteLayer);
+    }
     
     // Marcador destino
     const dest = pts[pts.length - 1];
@@ -32,15 +68,13 @@ export class GeoMapEngine {
   }
 
   private initMap(containerId: string) {
-    // Inicialización por defecto en Jujuy (-24.1858, -65.2995)
     this.map = L.map(containerId, {
       center: [-24.1858, -65.2995],
       zoom: 14,
-      zoomControl: false, // Usamos los botones Glassmorphism propios
+      zoomControl: false,
       attributionControl: false
     });
 
-    // Tiles OpenStreetMap (Máxima fiabilidad, nunca bloquea)
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
@@ -53,6 +87,11 @@ export class GeoMapEngine {
     this.map.on('contextmenu', (e: L.LeafletMouseEvent) => {
       this.onMapLongPress(e.latlng.lat, e.latlng.lng);
     });
+
+    // Desactivar tracking si el usuario arrastra el mapa manualmente
+    this.map.on('dragstart', () => {
+      if (this.isAutoTracking) this.disableAutoTracking();
+    });
   }
 
   public renderIncidents(incidents: Incident[]) {
@@ -62,17 +101,9 @@ export class GeoMapEngine {
 
     incidents.forEach((inc) => {
       const meta = TYPE_META[inc.type] || TYPE_META.UNKNOWN;
-
-      // 1. Crear Pin Personalizado con HTML/SVG
       const customIcon = L.divIcon({
         className: 'custom-leaflet-pin',
-        html: `
-          <div class="pin-marker t-${inc.type} ${inc.severity >= 4 ? 'critical' : ''}" style="--pin-color: ${meta.color}">
-            <span class="pin-inner">
-              <svg class="ic"><use href="#${meta.icon}"/></svg>
-            </span>
-          </div>
-        `,
+        html: `<div class="pin-marker t-${inc.type} ${inc.severity >= 4 ? 'critical' : ''}" style="--pin-color: ${meta.color}"><span class="pin-inner"><svg class="ic"><use href="#${meta.icon}"/></svg></span></div>`,
         iconSize: [34, 34],
         iconAnchor: [17, 34]
       });
@@ -84,7 +115,6 @@ export class GeoMapEngine {
       });
       this.markersLayer.addLayer(marker);
 
-      // 2. Trazar línea de corte / congestión si existe polyline
       if (inc.polyline && inc.polyline.length > 1) {
         const polyline = L.polyline(inc.polyline, {
           color: meta.color,
@@ -112,6 +142,9 @@ export class GeoMapEngine {
       this.map.flyTo([lat, lng], 15, { duration: 1.2 });
     } else {
       this.userMarker.setLatLng([lat, lng]);
+      if (this.isAutoTracking) {
+         this.map.panTo([lat, lng], { animate: true, duration: 1.0 });
+      }
     }
   }
 

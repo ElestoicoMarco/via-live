@@ -188,6 +188,82 @@ export function initUI() {
     });
   });
 
+  // == INICIO: FLUJO DE BÚSQUEDA Y NAVEGACIÓN ==
+  
+  // 1. Buscador con Debounce
+  let searchTimeout: any;
+  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+  const searchResults = document.getElementById('searchResults');
+  
+  searchInput?.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    const query = (e.target as HTMLInputElement).value;
+    if (query.length < 3) {
+      if(searchResults) searchResults.hidden = true;
+      return;
+    }
+    searchTimeout = setTimeout(async () => {
+      try {
+        const pos = GPSService.getUserPosition();
+        const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&lat=${pos.lat}&lng=${pos.lng}`);
+        const data = await res.json();
+        if (data.results && searchResults) {
+          searchResults.innerHTML = '';
+          data.results.forEach((item: any) => {
+            const div = document.createElement('div');
+            div.className = 'search-result-item';
+            div.textContent = `${item.address.freeformAddress}`;
+            div.onclick = () => {
+              searchResults.hidden = true;
+              searchInput.value = item.address.freeformAddress;
+              import('../services/navigation').then(nav => {
+                nav.unlockTTS();
+                nav.calculateRoute(pos.lat, pos.lng, item.position.lat, item.position.lon);
+              });
+            };
+            searchResults.appendChild(div);
+          });
+          searchResults.hidden = false;
+        }
+      } catch (e) { console.error(e); }
+    }, 500);
+  });
+
+  // 2. Ocultar resultados si tocan afuera
+  document.addEventListener('click', (e) => {
+    if (searchResults && !searchResults.contains(e.target as Node) && e.target !== searchInput) {
+      searchResults.hidden = true;
+    }
+  });
+
+  // 3. Botones Pre-Navegación
+  document.getElementById('btnStartNav')?.addEventListener('click', () => {
+    import('../services/navigation').then(nav => {
+      const pos = GPSService.getUserPosition();
+      nav.startActiveNavigation(pos.lat, pos.lng);
+    });
+  });
+
+  document.getElementById('btnCancelNav')?.addEventListener('click', () => {
+    import('../services/navigation').then(nav => nav.stopNavigation());
+    searchInput.value = '';
+    document.getElementById('searchBar')?.classList.remove('hidden');
+  });
+
+  document.getElementById('btnEndNav')?.addEventListener('click', () => {
+    import('../services/navigation').then(nav => nav.stopNavigation());
+    searchInput.value = '';
+    document.getElementById('searchBar')?.classList.remove('hidden');
+  });
+
+  // 4. FAB Reporte Rápido
+  document.getElementById('btnQuickReport')?.addEventListener('click', () => {
+    const pos = GPSService.getUserPosition();
+    openAdminModal(pos.lat, pos.lng); // Abre modal para reportar en ubicación actual
+  });
+
+  // == FIN: FLUJO NAVEGACIÓN ==
+
   document.getElementById('admSave')?.addEventListener('click', () => {
      if (!pendingManualCoords) return;
      const type = (document.getElementById('admType') as HTMLSelectElement).value;

@@ -4,14 +4,14 @@ import { Incident } from '../types/incident';
 
 let TTS_ENABLED = false;
 
-// Estado de Navegación
-export let isNavigating = false;
+type NavState = 'IDLE' | 'PREVIEW' | 'ACTIVE';
+export let navigationState: NavState = 'IDLE';
+
 let activeRouteGeoJSON: any = null;
-let currentDestination: { lat: number, lng: number } | null = null;
+export let currentDestination: { lat: number, lng: number } | null = null;
 let originalETA_Mins = 0;
 let lastHazardCheckTime = 0;
 
-// Turn-by-Turn state
 let turnInstructions: any[] = [];
 let nextTurnIndex = 0;
 
@@ -29,7 +29,6 @@ export function playTTS(text: string) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-AR';
   utterance.rate = 1.05;
-  
   const voices = synth.getVoices();
   const esVoice = voices.find(v => v.lang.startsWith('es-') && (v.name.includes('AR') || v.name.includes('MX') || v.name.includes('ES')));
   if (esVoice) utterance.voice = esVoice;
@@ -42,7 +41,6 @@ export function triggerMultimediaAlert(payload: any) {
   } else {
     triggerHaptic('success');
   }
-  
   if (payload.hardware_payload?.tts?.text) {
     playTTS(payload.hardware_payload.tts.text);
   }
@@ -51,13 +49,12 @@ export function triggerMultimediaAlert(payload: any) {
 
 export async function calculateRoute(startLat: number, startLng: number, endLat: number, endLng: number, isRecalculation = false) {
   try {
-    if (!isRecalculation) {
-      toast('Calculando ruta óptima...', 'info');
-    }
+    if (!isRecalculation) toast('Calculando ruta óptima...', 'info');
+    
     const res = await fetch(`/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}`);
     if (!res.ok) throw new Error('API Routing falló');
-    
     const data = await res.json();
+    
     if (!data.routes || data.routes.length === 0) {
       toast('Ruta no viable', 'warn'); return;
     }
@@ -65,6 +62,7 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
     const route = data.routes[0];
     const travelTimeSec = route.summary.travelTimeInSeconds;
     const mins = Math.round(travelTimeSec / 60);
+    const distKm = (route.summary.lengthInMeters / 1000).toFixed(1);
 
     const pts = route.legs[0].points;
     const polylinePts = pts.map((p: any) => [p.latitude, p.longitude] as [number, number]);
@@ -74,30 +72,42 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
     currentDestination = { lat: endLat, lng: endLng };
     originalETA_Mins = mins;
 
-    // Parsear instrucciones de giro
     const guidance = route.guidance?.instructions || [];
     turnInstructions = guidance.map((inst: any) => ({
       point: turf.point([inst.point.longitude, inst.point.latitude]),
       message: inst.message,
       spoken: false
     }));
-    // Ignorar la primera si es "Sal de tu ubicación"
     nextTurnIndex = turnInstructions.length > 0 ? 1 : 0;
 
-    mapEngine.renderActiveRoute(polylinePts);
-    startNavigationMode();
-    updateNavigationProgress(startLat, startLng);
+    // Procesar tramos de tráfico para colorear la línea
+    const trafficSegments = route.sections ? route.sections.filter((s:any) => s.sectionType === 'TRAFFIC') : [];
+    mapEngine.renderActiveRoute(polylinePts, trafficSegments);
 
-    if (!isRecalculation) {
+    if (isRecalculation) {
       triggerMultimediaAlert({
-        priority: 'HIGH',
         hardware_payload: {
-          haptics: { pattern: [100, 50, 100] },
-          tts: { text: `Ruta lista. Tiempo estimado: ${mins} minutos.` }
+          haptics: { pattern: [200, 100, 200, 100, 500] },
+          tts: { text: `Desvío calculado. Nuevo tiempo: ${mins} minutos.` }
         }
       });
+      return mins;
     }
 
+    // Si es ruta nueva, pasamos a PREVIEW
+    navigationState = 'PREVIEW';
+    const preCard = document.getElementById('preNavCard');
+    const preMetrics = document.getElementById('preNavMetrics');
+    if (preMetrics) preMetrics.textContent = `${mins} min • ${distKm} km`;
+    if (preCard) {
+       preCard.hidden = false;
+       preCard.classList.add('show');
+    }
+    document.getElementById('searchBar')?.classList.add('hidden'); // Ocultar buscador si existe
+    
+    // Auto Zoom a la ruta entera
+    mapEngine.fitBounds(polylinePts);
+    
     return mins;
   } catch (err) {
     console.error('Routing error:', err);
@@ -105,24 +115,55 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
   }
 }
 
-function startNavigationMode() {
-  isNavigating = true;
+export function startActiveNavigation(startLat: number, startLng: number) {
+  navigationState = 'ACTIVE';
+  
+  // Ocultar Preview Card
+  const preCard = document.getElementById('preNavCard');
+  if (preCard) {
+    preCard.classList.remove('show');
+    setTimeout(() => preCard.hidden = true, 300);
+  }
+  
+  // Mostrar HUD inferior
   document.getElementById('navHud')?.classList.add('show');
-  document.getElementById('btnEndNav')?.addEventListener('click', stopNavigation, { once: true });
+  
+  // Mostrar FAB Reporte
+  document.getElementById('btnQuickReport')?.classList.add('show');
+
+  // Activar centrado automático
+  mapEngine.enableAutoTracking();
+  
+  updateNavigationProgress(startLat, startLng);
+
+  triggerMultimediaAlert({
+    priority: 'HIGH',
+    hardware_payload: {
+      haptics: { pattern: [100, 50, 100] },
+      tts: { text: `Navegación iniciada.` }
+    }
+  });
 }
 
 export function stopNavigation() {
-  isNavigating = false;
+  navigationState = 'IDLE';
   activeRouteGeoJSON = null;
   currentDestination = null;
   turnInstructions = [];
+  
   document.getElementById('navHud')?.classList.remove('show');
+  document.getElementById('btnQuickReport')?.classList.remove('show');
+  
+  const preCard = document.getElementById('preNavCard');
+  if (preCard) preCard.classList.remove('show');
+
+  mapEngine.disableAutoTracking();
   mapEngine.renderActiveRoute([]);
   triggerHaptic('tap');
 }
 
 export function updateNavigationProgress(lat: number, lng: number) {
-  if (!isNavigating || !activeRouteGeoJSON) return;
+  if (navigationState !== 'ACTIVE' || !activeRouteGeoJSON) return;
   const turf = (window as any).turf;
   if (!turf) return;
 
@@ -132,9 +173,7 @@ export function updateNavigationProgress(lat: number, lng: number) {
   
   if (distToLine > 0.1) {
     if (currentDestination) {
-      calculateRoute(lat, lng, currentDestination.lat, currentDestination.lng, true).then(() => {
-         playTTS("Recalculando ruta.");
-      });
+      calculateRoute(lat, lng, currentDestination.lat, currentDestination.lng, true);
     }
     return;
   }
@@ -143,8 +182,6 @@ export function updateNavigationProgress(lat: number, lng: number) {
   if (nextTurnIndex < turnInstructions.length) {
     const nextTurn = turnInstructions[nextTurnIndex];
     const distToTurn = turf.distance(currentPt, nextTurn.point, { units: 'kilometers' });
-    
-    // Si estamos a menos de 150 metros del giro y no se anunció
     if (distToTurn < 0.15 && !nextTurn.spoken) {
       playTTS(nextTurn.message);
       nextTurn.spoken = true;
@@ -166,14 +203,21 @@ export function updateNavigationProgress(lat: number, lng: number) {
   const arrival = new Date(Date.now() + remainingMins * 60000);
   const timeStr = arrival.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-  $('#navEta').textContent = `${remainingMins} min`;
-  $('#navTime').textContent = `${remainingMins} min`;
-  $('#navDist').textContent = `${distKm < 1 ? Math.round(distKm*1000) + ' m' : distKm.toFixed(1) + ' km'}`;
-  $('#navEtaAbs').textContent = timeStr;
+  const elEta = document.getElementById('navEta');
+  if (elEta) elEta.textContent = `${remainingMins} min`;
+  
+  const elTime = document.getElementById('navTime');
+  if (elTime) elTime.textContent = `${remainingMins} min`;
+  
+  const elDist = document.getElementById('navDist');
+  if (elDist) elDist.textContent = `${distKm < 1 ? Math.round(distKm*1000) + ' m' : distKm.toFixed(1) + ' km'}`;
+  
+  const elAbs = document.getElementById('navEtaAbs');
+  if (elAbs) elAbs.textContent = timeStr;
 }
 
 export function checkRouteHazards(incidents: Incident[], currentLat: number, currentLng: number) {
-  if (!isNavigating || !activeRouteGeoJSON || !currentDestination) return;
+  if (navigationState !== 'ACTIVE' || !activeRouteGeoJSON || !currentDestination) return;
   const turf = (window as any).turf;
   if (!turf) return;
 
@@ -198,36 +242,6 @@ export function checkRouteHazards(incidents: Incident[], currentLat: number, cur
   }
 
   if (hazardDetected) {
-     fetch(`/api/route?start=${currentLat},${currentLng}&end=${currentDestination.lat},${currentDestination.lng}`)
-       .then(res => res.json())
-       .then(data => {
-          if (!data.routes) return;
-          const route = data.routes[0];
-          const pts = route.legs[0].points;
-          const newRouteGeoJSON = turf.lineString(pts.map((p: any) => [p.longitude, p.latitude]));
-          const diff = Math.abs(turf.length(newRouteGeoJSON) - turf.length(activeRouteGeoJSON));
-          
-          if (diff > 0.5) {
-             activeRouteGeoJSON = newRouteGeoJSON;
-             const polylinePts = pts.map((p: any) => [p.latitude, p.longitude] as [number, number]);
-             
-             // Actualizar maniobras
-             const guidance = route.guidance?.instructions || [];
-             turnInstructions = guidance.map((inst: any) => ({
-               point: turf.point([inst.point.longitude, inst.point.latitude]),
-               message: inst.message,
-               spoken: false
-             }));
-             nextTurnIndex = turnInstructions.length > 0 ? 1 : 0;
-
-             mapEngine.renderActiveRoute(polylinePts);
-             triggerMultimediaAlert({
-               hardware_payload: {
-                 haptics: { pattern: [200, 100, 200, 100, 500] },
-                 tts: { text: `Atención. Incidente detectado adelante. Calculando desvío óptimo.` }
-               }
-             });
-          }
-       });
+     calculateRoute(currentLat, currentLng, currentDestination.lat, currentDestination.lng, true);
   }
 }

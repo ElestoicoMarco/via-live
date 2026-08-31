@@ -50,7 +50,8 @@ app.get('/api/route', async (req, res) => {
   if (!start || !end) return res.status(400).json({ error: "Faltan coordenadas start/end" });
 
   try {
-    const url = `https://api.tomtom.com/routing/1/calculateRoute/${start}:${end}/json?key=${apiKey}&traffic=true&travelMode=car&instructionsType=text`;
+    // Agregamos sectionType=traffic para colorear la ruta
+    const url = `https://api.tomtom.com/routing/1/calculateRoute/${start}:${end}/json?key=${apiKey}&traffic=true&travelMode=car&instructionsType=text&sectionType=traffic`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`TomTom Routing HTTP ${response.status}`);
     const data = await response.json();
@@ -58,6 +59,26 @@ app.get('/api/route', async (req, res) => {
   } catch (error) {
     console.error("Error GIS Routing:", error);
     res.status(500).json({ error: "Error calculando la ruta óptima" });
+  }
+});
+
+// Endpoint de Búsqueda (Search API)
+app.get('/api/search', async (req, res) => {
+  const apiKey = process.env.TOMTOM_API_KEY;
+  const { query, lat, lng } = req.query;
+  if (!query) return res.status(400).json({ error: "Falta query de búsqueda" });
+
+  try {
+    // Priorizamos resultados cerca del usuario (Jujuy) si manda coordenadas, sino Jujuy genérico
+    const bias = (lat && lng) ? `&lat=${lat}&lon=${lng}&radius=50000` : `&lat=-24.18&lon=-65.30&radius=50000`;
+    const url = `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${apiKey}${bias}&language=es-ES&limit=5`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`TomTom Search HTTP ${response.status}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Error GIS Search:", error);
+    res.status(500).json({ error: "Error en la búsqueda" });
   }
 });
 

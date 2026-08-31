@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -62,17 +62,41 @@
 
   <section id="view-map" class="view active">
     <div id="mapContainer"></div>
-    <!-- HUD de Navegaci�n Activa -->
+    <!-- Barra de Búsqueda Inteligente (Google Maps style) -->
+    <div id="searchBar" class="search-bar glass">
+      <svg class="ic"><use href="#i-pin"/></svg>
+      <input type="text" id="searchInput" placeholder="Buscar dirección o destino..." autocomplete="off">
+      <div id="searchResults" class="search-results" hidden></div>
+    </div>
+
+    <!-- HUD de Navegación Activa -->
     <div id="navHud" class="nav-hud">
       <div class="nav-eta" id="navEta">--:--</div>
       <div class="nav-metrics">
         <div>Llegada a las <span id="navEtaAbs">--:--</span></div>
-        <div style="font-size:0.85rem"><span id="navTime">-- min</span> � <span id="navDist">-- km</span></div>
+        <div style="font-size:0.85rem"><span id="navTime">-- min</span> • <span id="navDist">-- km</span></div>
       </div>
       <button class="icon-btn" id="btnEndNav" style="background:rgba(248,81,73,0.15);color:#f85149"><svg class="ic"><use href="#i-x"/></svg></button>
     </div>
 
+    <!-- Tarjeta Inferior de Vista Previa (PreNavCard) -->
+    <div id="preNavCard" class="pre-nav-card glass" hidden>
+      <div class="pre-nav-header">
+        <h3 id="preNavTitle">Ruta Óptima</h3>
+        <p class="pre-nav-sub" id="preNavMetrics">-- min • -- km</p>
+      </div>
+      <div class="pre-nav-actions">
+        <button class="btn-outline" id="btnCancelNav">Cancelar</button>
+        <button class="btn-primary" id="btnStartNav">Iniciar Navegación</button>
+      </div>
+    </div>
 
+    <!-- Botón Flotante (FAB) de Reporte Rápido -->
+    <button class="fab-report" id="btnQuickReport" aria-label="Reportar Incidente">
+      <svg class="ic" style="width:24px;height:24px"><use href="#i-alert"/></svg>
+    </button>
+
+    <!-- Controles Flotantes Originales -->
     <div class="map-topbar">
       <div class="chip glass" id="liveChip">
         <span class="live-dot"></span> EN VIVO · <b id="liveCount">0</b> incidentes

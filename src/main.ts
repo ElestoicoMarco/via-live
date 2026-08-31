@@ -6,7 +6,7 @@ import { subscribeToIncidents } from './services/firestoreSim';
 import { openSheet, renderList, openAdminModal, initUI } from './ui/components';
 import { $, triggerHaptic } from './utils/helpers';
 import { state } from './store/state';
-import { updateNavigationProgress, checkRouteHazards, isNavigating } from './services/navigation';
+import { updateNavigationProgress, checkRouteHazards, navigationState } from './services/navigation';
 
 export let mapEngine: GeoMapEngine;
 
@@ -24,7 +24,7 @@ function initApp() {
     const ro = $('#readout');
     if (ro) ro.innerHTML = `${Math.abs(pos.lat).toFixed(4)}°S · ${Math.abs(pos.lng).toFixed(4)}°O<br>GPS ±${pos.accuracy} m · EN VIVO`;
     
-    if (isNavigating) {
+    if (navigationState === 'ACTIVE') {
       updateNavigationProgress(pos.lat, pos.lng);
     }
   });
@@ -43,7 +43,7 @@ function initApp() {
     renderList(); // Refresca la UI
     const lc = $('#liveCount'); if (lc) lc.textContent = incidents.length.toString();
     
-    if (isNavigating) {
+    if (navigationState === 'ACTIVE') {
       const pos = GPSService.getUserPosition();
       checkRouteHazards(incidents, pos.lat, pos.lng);
     }
