@@ -50,7 +50,7 @@ app.get('/api/route', async (req, res) => {
   if (!start || !end) return res.status(400).json({ error: "Faltan coordenadas start/end" });
 
   try {
-    const url = `https://api.tomtom.com/routing/1/calculateRoute/${start}:${end}/json?key=${apiKey}&traffic=true&travelMode=car`;
+    const url = `https://api.tomtom.com/routing/1/calculateRoute/${start}:${end}/json?key=${apiKey}&traffic=true&travelMode=car&instructionsType=text`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`TomTom Routing HTTP ${response.status}`);
     const data = await response.json();

@@ -11,6 +11,10 @@ let currentDestination: { lat: number, lng: number } | null = null;
 let originalETA_Mins = 0;
 let lastHazardCheckTime = 0;
 
+// Turn-by-Turn state
+let turnInstructions: any[] = [];
+let nextTurnIndex = 0;
+
 export function unlockTTS() {
   TTS_ENABLED = true;
   const u = new SpeechSynthesisUtterance('');
@@ -42,7 +46,7 @@ export function triggerMultimediaAlert(payload: any) {
   if (payload.hardware_payload?.tts?.text) {
     playTTS(payload.hardware_payload.tts.text);
   }
-  toast('Alerta: ' + payload.hardware_payload?.tts?.text.substring(0,40) + '...', 'info');
+  toast('Asistente: ' + payload.hardware_payload?.tts?.text.substring(0,40) + '...', 'info');
 }
 
 export async function calculateRoute(startLat: number, startLng: number, endLat: number, endLng: number, isRecalculation = false) {
@@ -65,11 +69,20 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
     const pts = route.legs[0].points;
     const polylinePts = pts.map((p: any) => [p.latitude, p.longitude] as [number, number]);
     
-    // Convertir a Turf GeoJSON
     const turf = (window as any).turf;
     activeRouteGeoJSON = turf.lineString(pts.map((p: any) => [p.longitude, p.latitude]));
     currentDestination = { lat: endLat, lng: endLng };
     originalETA_Mins = mins;
+
+    // Parsear instrucciones de giro
+    const guidance = route.guidance?.instructions || [];
+    turnInstructions = guidance.map((inst: any) => ({
+      point: turf.point([inst.point.longitude, inst.point.latitude]),
+      message: inst.message,
+      spoken: false
+    }));
+    // Ignorar la primera si es "Sal de tu ubicación"
+    nextTurnIndex = turnInstructions.length > 0 ? 1 : 0;
 
     mapEngine.renderActiveRoute(polylinePts);
     startNavigationMode();
@@ -85,7 +98,7 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
       });
     }
 
-    return mins; // Devolvemos el ETA para comparar
+    return mins;
   } catch (err) {
     console.error('Routing error:', err);
     if (!isRecalculation) toast('Fallo al trazar ruta', 'err');
@@ -102,6 +115,7 @@ export function stopNavigation() {
   isNavigating = false;
   activeRouteGeoJSON = null;
   currentDestination = null;
+  turnInstructions = [];
   document.getElementById('navHud')?.classList.remove('show');
   mapEngine.renderActiveRoute([]);
   triggerHaptic('tap');
@@ -113,12 +127,10 @@ export function updateNavigationProgress(lat: number, lng: number) {
   if (!turf) return;
 
   const currentPt = turf.point([lng, lat]);
-  // 1. Verificar desviación
   const snapped = turf.nearestPointOnLine(activeRouteGeoJSON, currentPt, { units: 'kilometers' });
   const distToLine = turf.distance(currentPt, snapped, { units: 'kilometers' });
   
   if (distToLine > 0.1) {
-    // A más de 100 metros de la ruta -> Fuera de ruta, recalcular
     if (currentDestination) {
       calculateRoute(lat, lng, currentDestination.lat, currentDestination.lng, true).then(() => {
          playTTS("Recalculando ruta.");
@@ -127,40 +139,44 @@ export function updateNavigationProgress(lat: number, lng: number) {
     return;
   }
 
-  // 2. Calcular distancia restante
+  // Turn-by-turn check
+  if (nextTurnIndex < turnInstructions.length) {
+    const nextTurn = turnInstructions[nextTurnIndex];
+    const distToTurn = turf.distance(currentPt, nextTurn.point, { units: 'kilometers' });
+    
+    // Si estamos a menos de 150 metros del giro y no se anunció
+    if (distToTurn < 0.15 && !nextTurn.spoken) {
+      playTTS(nextTurn.message);
+      nextTurn.spoken = true;
+      nextTurnIndex++;
+    }
+  }
+
   const destPt = turf.point([currentDestination!.lng, currentDestination!.lat]);
   const slicedLine = turf.lineSlice(snapped, destPt, activeRouteGeoJSON);
   const distKm = turf.length(slicedLine, { units: 'kilometers' });
   
-  // Si llegó (menos de 50m)
   if (distKm < 0.05) {
     playTTS("Has llegado a tu destino.");
     stopNavigation();
     return;
   }
 
-  // Actualizar UI
-  // Velocidad urbana asumiendo ~35 km/h promedio -> ~1.7 min por km
   const remainingMins = Math.max(1, Math.round(distKm * 1.7)); 
-  
-  // ETA Absoluta
   const arrival = new Date(Date.now() + remainingMins * 60000);
   const timeStr = arrival.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-  // Render
   $('#navEta').textContent = `${remainingMins} min`;
   $('#navTime').textContent = `${remainingMins} min`;
   $('#navDist').textContent = `${distKm < 1 ? Math.round(distKm*1000) + ' m' : distKm.toFixed(1) + ' km'}`;
   $('#navEtaAbs').textContent = timeStr;
 }
 
-// Fase 3: Evaluación Dinámica de Riesgos (Google Maps Style)
 export function checkRouteHazards(incidents: Incident[], currentLat: number, currentLng: number) {
   if (!isNavigating || !activeRouteGeoJSON || !currentDestination) return;
   const turf = (window as any).turf;
   if (!turf) return;
 
-  // No chequear más de 1 vez cada 40s (la capa se refresca a esa tasa igual)
   const now = Date.now();
   if (now - lastHazardCheckTime < 35000) return;
   lastHazardCheckTime = now;
@@ -171,12 +187,10 @@ export function checkRouteHazards(incidents: Incident[], currentLat: number, cur
   for (const inc of incidents) {
     if (inc.type === 'UNKNOWN') continue;
     const incPt = turf.point([inc.location.lng, inc.location.lat]);
-    // ¿El incidente está a menos de 200m de nuestra polilínea de ruta activa?
     const dist = turf.pointToLineDistance(incPt, activeRouteGeoJSON, { units: 'kilometers' });
     if (dist < 0.2) {
-       // ¿Está "adelante" en la ruta?
        const distUserToInc = turf.distance(currentPt, incPt, { units: 'kilometers' });
-       if (distUserToInc > 0.1 && distUserToInc < 5.0) { // Incidente adelante nuestro (entre 100m y 5km)
+       if (distUserToInc > 0.1 && distUserToInc < 5.0) {
           hazardDetected = true;
           break;
        }
@@ -184,27 +198,29 @@ export function checkRouteHazards(incidents: Incident[], currentLat: number, cur
   }
 
   if (hazardDetected) {
-     // Pedir recálculo silencioso al backend
      fetch(`/api/route?start=${currentLat},${currentLng}&end=${currentDestination.lat},${currentDestination.lng}`)
        .then(res => res.json())
        .then(data => {
           if (!data.routes) return;
           const route = data.routes[0];
-          const newMins = Math.round(route.summary.travelTimeInSeconds / 60);
-          
-          // Si el nuevo ETA es MENOR al actual (o igual pero evita el corte total), tomarlo.
-          // En TomTom, la nueva ruta automáticamente esquiva cortes de ruta severos.
           const pts = route.legs[0].points;
           const newRouteGeoJSON = turf.lineString(pts.map((p: any) => [p.longitude, p.latitude]));
-          
-          // Verificar si cambió geométricamente (desvío real)
           const diff = Math.abs(turf.length(newRouteGeoJSON) - turf.length(activeRouteGeoJSON));
           
-          if (diff > 0.5) { // Si hay un desvío de más de 500m
+          if (diff > 0.5) {
              activeRouteGeoJSON = newRouteGeoJSON;
              const polylinePts = pts.map((p: any) => [p.latitude, p.longitude] as [number, number]);
-             mapEngine.renderActiveRoute(polylinePts);
              
+             // Actualizar maniobras
+             const guidance = route.guidance?.instructions || [];
+             turnInstructions = guidance.map((inst: any) => ({
+               point: turf.point([inst.point.longitude, inst.point.latitude]),
+               message: inst.message,
+               spoken: false
+             }));
+             nextTurnIndex = turnInstructions.length > 0 ? 1 : 0;
+
+             mapEngine.renderActiveRoute(polylinePts);
              triggerMultimediaAlert({
                hardware_payload: {
                  haptics: { pattern: [200, 100, 200, 100, 500] },
