@@ -52,16 +52,27 @@ function startPolling() {
         const firstPt = coords[0];
         const polyline = coords.map((pt: number[]) => [pt[1], pt[0]] as [number, number]);
 
+        // Mejorar la extracción de datos de TomTom
+        const roadNums = f.properties.roadNumbers ? f.properties.roadNumbers.join(', ') : '';
+        const fromStreet = f.properties.from || '';
+        const toStreet = f.properties.to ? `hacia ${f.properties.to}` : '';
+        
+        let computedRoadName = [roadNums, fromStreet].filter(Boolean).join(' - ');
+        if (!computedRoadName) computedRoadName = info.title;
+
+        const eventsStr = f.properties.events ? f.properties.events.map((e:any)=>e.description).join(', ') : '';
+        const computedDesc = [eventsStr, toStreet].filter(Boolean).join(' ') || 'Incidencia detectada por satélite';
+
         return {
           id: f.properties.id, 
           type: info.type, 
           severity: info.severity, 
           location: { lat: firstPt[1], lng: firstPt[0] },
           polyline, 
-          roadName: info.title, 
-          description: f.properties.events?.[0]?.description || 'Incidencia detectada por satélite',
+          roadName: computedRoadName, 
+          description: computedDesc,
           startTime: f.properties.startTime || new Date().toISOString(), 
-          endTime: null
+          endTime: f.properties.endTime || null
         };
       });
 

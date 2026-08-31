@@ -350,12 +350,23 @@ export function initUI() {
   if (btnLocate) {
     btnLocate.addEventListener('click', () => {
       if (!sheetIncident) return;
-      triggerHaptic('tap'); closeSheet(); switchView('map');
+      triggerHaptic('tap'); 
+      const loc = sheetIncident.location;
+      closeSheet(); 
+      switchView('map');
       setTimeout(() => { 
-        if(sheetIncident?.location) {
-          import('../main').then(m => m.mapEngine.flyTo(sheetIncident!.location.lat, sheetIncident!.location.lng, 16));
-        }
+        import('../main').then(m => m.mapEngine.flyTo(loc.lat, loc.lng, 17));
       }, 60);
+    });
+  }
+
+  const btnPdf = $('#shPdf');
+  if (btnPdf) {
+    btnPdf.addEventListener('click', () => {
+      if (!sheetIncident) return;
+      triggerHaptic('tap');
+      const inc = sheetIncident;
+      buildPDF([inc], `Reporte de Incidente - ${TYPE_META[inc.type].label}`);
     });
   }
 
