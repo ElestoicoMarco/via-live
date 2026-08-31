@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono/700.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
 </head>
 <body>
 
@@ -61,6 +62,16 @@
 
   <section id="view-map" class="view active">
     <div id="mapContainer"></div>
+    <!-- HUD de Navegación Activa -->
+    <div id="navHud" class="nav-hud" hidden>
+      <div class="nav-eta" id="navEta">--:--</div>
+      <div class="nav-metrics">
+        <div>Llegada a las <span id="navEtaAbs">--:--</span></div>
+        <div style="font-size:0.85rem"><span id="navTime">-- min</span> • <span id="navDist">-- km</span></div>
+      </div>
+      <button class="icon-btn" id="btnEndNav" style="background:rgba(248,81,73,0.15);color:#f85149"><svg class="ic"><use href="#i-x"/></svg></button>
+    </div>
+
 
     <div class="map-topbar">
       <div class="chip glass" id="liveChip">
