@@ -17,7 +17,9 @@ export function openAdminModal(lat: number, lng: number) {
 }
 export function openSheet(id: string) {
   try {
-    const inc = state.incidents.find(i => i.id === id); 
+    // TomTom usa IDs numéricos, pero el DOM (dataset) o la llamada los convierte a string. 
+    // Usamos String() para asegurar una comparación sin fallos de tipo.
+    const inc = state.incidents.find(i => String(i.id) === String(id)); 
     if (!inc) {
       toast('Incidente no encontrado', 'err');
       return;
