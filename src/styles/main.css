@@ -405,7 +405,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   --text-main:#24292f; --text-sub:#57606a; --text-muted:#8c959f;
   color-scheme:light;
 }
-html:not(.light-theme) .leaflet-layer,
+html:not(.light-theme) .leaflet-tile-pane,
 html:not(.light-theme) .leaflet-control-zoom {
   filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
@@ -460,4 +460,9 @@ html:not(.light-theme) .leaflet-control-zoom {
 }
 .light-theme .bottom-sheet {
   background: var(--surface) !important;
+}
+.light-theme .chip {
+  background: var(--surface) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-subtle);
 }
