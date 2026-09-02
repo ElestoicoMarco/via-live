@@ -175,7 +175,7 @@ export function buildPDF(list: Incident[], subtitle: string) {
       doc.setTextColor(240, 246, 252); doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
       doc.text('PARTE OFICIAL DE TRANSITABILIDAD VIAL', 14, 13);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(139, 148, 158);
-      doc.text('TransitoPWA · Sistema de Monitoreo Industrial · bbox Salta (RN9 / Av. Bolivia)', 14, 19);
+      doc.text('TransitoPWA · Sistema de Monitoreo Industrial · bbox Jujuy (Gran Jujuy / RN66)', 14, 19);
       doc.text(`Emisión: ${now.toLocaleString('es-AR')}   ${subtitle ? '·  ' + subtitle : ''}`, 14, 24.5);
       doc.autoTable({
         startY: 38,
