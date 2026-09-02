@@ -1,4 +1,4 @@
-import { $, $$, escapeHTML, formatDistance, timeAgo, triggerHaptic, fmtTime, fmtLat, fmtLng, toast } from '../utils/helpers';
+﻿import { $, $$, escapeHTML, formatDistance, timeAgo, triggerHaptic, fmtTime, fmtLat, fmtLng, toast } from '../utils/helpers';
 import { state } from '../store/state';
 import { TYPE_META, SEV_LABELS, Incident } from '../types/incident';
 import { GPSService } from '../services/gps';
@@ -400,7 +400,21 @@ export function initUI() {
     toast(state.simOffline ? 'Modo offline simulado' : 'Conexión restablecida', state.simOffline ? 'warn' : 'ok');
   });
 
-  window.addEventListener('online', applyConn);
+  
+
+  const themeSw = $('#themeSwitch') as HTMLInputElement;
+  if (themeSw) {
+    themeSw.addEventListener('change', (e: any) => {
+      triggerHaptic('tap');
+      if (e.target.checked) {
+        document.documentElement.classList.add('light-theme');
+        toast('Modo Día activado', 'ok');
+      } else {
+        document.documentElement.classList.remove('light-theme');
+        toast('Modo Noche activado', 'ok');
+      }
+    });
+  }
   window.addEventListener('offline', applyConn);
 
   $$('.hbtn').forEach(b => b.addEventListener('click', () => {

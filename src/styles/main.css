@@ -399,3 +399,13 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 .search-bar.hidden { transform: translate(-50%, -150%); opacity: 0; pointer-events: none; }
 
+:root.light-theme {
+  --bg:#f6f8fa; --surface:#ffffff; --surface-2:#f3f4f6;
+  --border:#d0d7de; --border-subtle:#e1e4e8;
+  --text-main:#24292f; --text-sub:#57606a; --text-muted:#8c959f;
+  color-scheme:light;
+}
+html:not(.light-theme) .leaflet-layer,
+html:not(.light-theme) .leaflet-control-zoom {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}

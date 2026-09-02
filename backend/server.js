@@ -25,8 +25,10 @@ app.get('/api/tomtom', async (req, res) => {
 
   try {
     // Las coordenadas de tu mapa (Bounding Box de Jujuy)
-    const bbox = '-65.38,-24.25,-65.22,-24.12';
-    const url = `https://api.tomtom.com/traffic/services/5/incidentDetails?bbox=${bbox}&key=${apiKey}`;
+    const bbox = '-65.45,-24.25,-65.15,-24.12';
+    // Solicitamos campos específicos (fields) para asegurar que TomTom nos devuelva los nombres de las calles y descripciones de eventos en español
+    const fields = '{incidents{type,geometry{type,coordinates},properties{id,iconCategory,magnitudeOfDelay,events{description,code,iconCategory},startTime,endTime,from,to,length,delay,roadNumbers}}}';
+    const url = `https://api.tomtom.com/traffic/services/5/incidentDetails?bbox=${bbox}&fields=${encodeURIComponent(fields)}&language=es-ES&key=${apiKey}`;
 
     const response = await fetch(url);
     if (!response.ok) {
