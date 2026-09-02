@@ -1,3 +1,4 @@
+import { initAudio } from '../utils/audio';
 import { mapEngine } from '../main';
 import { toast, triggerHaptic, $ } from '../utils/helpers';
 import { Incident } from '../types/incident';
@@ -20,6 +21,7 @@ export function unlockTTS() {
   const u = new SpeechSynthesisUtterance('');
   u.volume = 0;
   window.speechSynthesis.speak(u);
+  initAudio(); // Habilitar motor SFX nativo
 }
 
 export function playTTS(text: string) {

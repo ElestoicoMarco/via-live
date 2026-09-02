@@ -2,10 +2,11 @@
 import { TYPE_META } from '../types/incident';
 import { getDistanceKm, triggerHaptic, toast } from '../utils/helpers';
 import { playTTS } from './navigation';
+import { playSFX } from '../utils/audio'; // Nuevo motor SFX
 
 const notifiedIncidents = new Map<string, number>();
 const COOLDOWN_MS = 1000 * 60 * 30; // 30 minutes
-const RADAR_RADIUS_KM = 0.8; // 800m
+const RADAR_RADIUS_KM = 0.6; // 600m (Reducido de 800m para pruebas)
 
 export function runProximityRadar(userLat: number, userLng: number) {
   const now = Date.now();
@@ -30,13 +31,17 @@ export function runProximityRadar(userLat: number, userLng: number) {
     const m = TYPE_META[inc.type] || TYPE_META.UNKNOWN;
     const msg = `Precaución. ${m.label} a ${distMeters} metros, por ${inc.roadName || 'la vía'}.`;
     
-    playTTS(msg);
-    toast(`Radar: ${m.label} a ${distMeters}m`, 'warn');
+    const isDanger = inc.severity >= 3 || inc.type === 'ROAD_CLOSED';
     
-    if (inc.severity >= 3 || inc.type === 'ROAD_CLOSED') {
-      triggerHaptic('danger');
-    } else {
-      triggerHaptic('warning');
-    }
+    // Coreografía Multisensorial (Sonido -> Vibración -> Voz)
+    playSFX(isDanger ? 'danger' : 'warning');
+    triggerHaptic(isDanger ? 'danger' : 'warning');
+    
+    // Diferir la voz 800ms para que no se superponga con el "Bip" de alarma
+    setTimeout(() => {
+      playTTS(msg);
+    }, 800);
+    
+    toast(`Radar: ${m.label} a ${distMeters}m`, 'warn');
   }
 }
