@@ -434,3 +434,30 @@ html:not(.light-theme) .leaflet-control-zoom {
 .light-theme .nav-eta {
   color: var(--btn-green);
 }
+.light-theme .incident-card,
+.light-theme .bottom-sheet,
+.light-theme .modal-content,
+.light-theme .top-bar,
+.light-theme .view-header {
+  background: var(--surface);
+  border-color: var(--border-subtle);
+}
+.light-theme .card-title,
+.light-theme .sheet-title,
+.light-theme .stat-val,
+.light-theme .ab-txt b,
+.light-theme .view-header h1 {
+  color: var(--text-main) !important;
+}
+.light-theme .card-desc,
+.light-theme .sheet-desc,
+.light-theme .stat-label,
+.light-theme .ab-txt {
+  color: var(--text-sub) !important;
+}
+.light-theme .card-meta {
+  color: var(--text-muted);
+}
+.light-theme .bottom-sheet {
+  background: var(--surface) !important;
+}
