@@ -49,17 +49,49 @@ export function triggerMultimediaAlert(payload: any) {
 
 export async function calculateRoute(startLat: number, startLng: number, endLat: number, endLng: number, isRecalculation = false) {
   try {
-    if (!isRecalculation) toast('Calculando ruta óptima...', 'info');
+    if (!isRecalculation) toast('Evaluando rutas evasivas...', 'info');
     
     const res = await fetch(`/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}`);
-    if (!res.ok) throw new Error('API Routing falló');
+    if (!res.ok) throw new Error('API Routing fall?');
     const data = await res.json();
     
     if (!data.routes || data.routes.length === 0) {
       toast('Ruta no viable', 'warn'); return;
     }
 
-    const route = data.routes[0];
+    const turf = (window as any).turf;
+    const { state } = await import('../store/state');
+
+    // FASE 3: Motor de Evasi?n (Evaluaci?n de m?ltiples rutas con Turf.js)
+    const evaluatedRoutes = data.routes.map((route: any, index: number) => {
+      const pts = route.legs[0].points;
+      const geoJson = turf.lineString(pts.map((p: any) => [p.longitude, p.latitude]));
+      let hits = 0;
+      let severity = 0;
+
+      // Escudo Anticolisi?n
+      state.incidents.forEach(inc => {
+        if (inc.type === 'UNKNOWN') return;
+        const incPt = turf.point([inc.location.lng, inc.location.lat]);
+        const dist = turf.pointToLineDistance(incPt, geoJson, { units: 'kilometers' });
+        if (dist < 0.15) { // Si pasa a menos de 150m de un incidente
+          hits++;
+          severity += inc.severity;
+        }
+      });
+
+      return { route, geoJson, hits, severity, index };
+    });
+
+    // FASE 4: Selecci?n Estrat?gica (Priorizar 0 incidentes, luego menor severidad, luego tiempo)
+    evaluatedRoutes.sort((a: any, b: any) => {
+      if (a.hits !== b.hits) return a.hits - b.hits;
+      if (a.severity !== b.severity) return a.severity - b.severity;
+      return a.route.summary.travelTimeInSeconds - b.route.summary.travelTimeInSeconds;
+    });
+
+    const best = evaluatedRoutes[0];
+    const route = best.route;
     const travelTimeSec = route.summary.travelTimeInSeconds;
     const mins = Math.round(travelTimeSec / 60);
     const distKm = (route.summary.lengthInMeters / 1000).toFixed(1);
@@ -67,8 +99,7 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
     const pts = route.legs[0].points;
     const polylinePts = pts.map((p: any) => [p.latitude, p.longitude] as [number, number]);
     
-    const turf = (window as any).turf;
-    activeRouteGeoJSON = turf.lineString(pts.map((p: any) => [p.longitude, p.latitude]));
+    activeRouteGeoJSON = best.geoJson;
     currentDestination = { lat: endLat, lng: endLng };
     originalETA_Mins = mins;
 
@@ -80,9 +111,30 @@ export async function calculateRoute(startLat: number, startLng: number, endLat:
     }));
     nextTurnIndex = turnInstructions.length > 0 ? 1 : 0;
 
-    // Procesar tramos de tráfico para colorear la línea
     const trafficSegments = route.sections ? route.sections.filter((s:any) => s.sectionType === 'TRAFFIC') : [];
     mapEngine.renderActiveRoute(polylinePts, trafficSegments);
+
+    // Actualizar UI del escudo anticolisi?n
+    let evasionMsg = best.hits === 0 ? '??? Ruta 100% Limpia' : `?? Atraviesa ${best.hits} zonas de riesgo`;
+    if (evaluatedRoutes.length > 1 && best.index !== 0) {
+      evasionMsg = `??? Ruta Alternativa (Esquiv? ${evaluatedRoutes[0].hits - best.hits} atascos)`;
+    }
+
+    if (!isRecalculation) {
+      navigationState = 'PREVIEW';
+      const preCard = document.getElementById('preNavCard');
+      const preMetrics = document.getElementById('preNavMetrics');
+      if (preMetrics) {
+        preMetrics.innerHTML = `${mins} min ? ${distKm} km <br><span style="font-size:0.85rem;color:#10b981">${evasionMsg} (de ${evaluatedRoutes.length} evaluadas)</span>`;
+      }
+      if (preCard) {
+         preCard.hidden = false;
+         preCard.classList.add('show');
+      }
+      document.getElementById('searchBar')?.classList.add('hidden'); // Ocultar buscador
+      mapEngine.fitBounds(polylinePts);
+    }
+
 
     if (isRecalculation) {
       triggerMultimediaAlert({

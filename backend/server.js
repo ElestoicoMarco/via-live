@@ -53,7 +53,7 @@ app.get('/api/route', async (req, res) => {
 
   try {
     // Agregamos sectionType=traffic para colorear la ruta
-    const url = `https://api.tomtom.com/routing/1/calculateRoute/${start}:${end}/json?key=${apiKey}&traffic=true&travelMode=car&instructionsType=text&sectionType=traffic`;
+    const url = `https://api.tomtom.com/routing/1/calculateRoute/${start}:${end}/json?key=${apiKey}&traffic=true&travelMode=car&instructionsType=text&sectionType=traffic&maxAlternatives=2`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`TomTom Routing HTTP ${response.status}`);
     const data = await response.json();
