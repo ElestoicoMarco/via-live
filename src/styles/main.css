@@ -405,10 +405,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   --text-main:#24292f; --text-sub:#57606a; --text-muted:#8c959f;
   color-scheme:light;
 }
-html:not(.light-theme) .leaflet-tile-pane,
-html:not(.light-theme) .leaflet-control-zoom {
-  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
-}
+
 /* LIGHT THEME OVERRIDES */
 .light-theme .search-bar,
 .light-theme .pre-nav-card,

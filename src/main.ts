@@ -21,7 +21,7 @@ function initApp() {
   );
 
   GPSService.startWatching((pos) => {
-    mapEngine.updateUserLocation(pos.lat, pos.lng, pos.accuracy);
+    mapEngine.updateUserLocation(pos.lat, pos.lng, pos.accuracy, pos.speedKmH);
     const ro = $('#readout');
     if (ro) ro.innerHTML = `${Math.abs(pos.lat).toFixed(4)}°S · ${Math.abs(pos.lng).toFixed(4)}°O<br>GPS ±${pos.accuracy} m · EN VIVO`;
     

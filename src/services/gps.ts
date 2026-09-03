@@ -2,10 +2,11 @@ export interface UserPosition {
   lat: number;
   lng: number;
   accuracy: number;
+  speedKmH: number;
 }
 
 export class GPSService {
-  private static userPos: UserPosition = { lat: -24.1858, lng: -65.2995, accuracy: 15 };
+  private static userPos: UserPosition = { lat: -24.1858, lng: -65.2995, accuracy: 15, speedKmH: 0 };
   private static watchId: number | null = null;
 
   public static startWatching(onUpdate: (pos: UserPosition) => void) {
@@ -19,7 +20,8 @@ export class GPSService {
         this.userPos = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
-          accuracy: Math.round(pos.coords.accuracy)
+          accuracy: Math.round(pos.coords.accuracy),
+          speedKmH: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0
         };
         onUpdate(this.userPos);
       },

@@ -1,4 +1,4 @@
-import * as L from 'leaflet';
+﻿import * as L from 'leaflet';
 import { Incident, TYPE_META } from '../types/incident';
 import { triggerHaptic } from '../utils/helpers';
 
@@ -67,18 +67,25 @@ export class GeoMapEngine {
     L.circleMarker(dest, { radius: 7, fillColor: '#10b981', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(this.activeRouteLayer);
   }
 
-  private initMap(containerId: string) {
+    private initMap(containerId: string) {
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+    const dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' });
+
     this.map = L.map(containerId, {
       center: [-24.1858, -65.2995],
       zoom: 14,
       zoomControl: false,
-      attributionControl: false
+      attributionControl: false,
+      layers: [document.documentElement.classList.contains('light-theme') ? osm : dark]
     });
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(this.map);
+    const baseMaps = {
+      "🗺️ Mapa Estándar": osm,
+      "🛰️ Satélite HD": sat,
+      "🕶️ Táctico (Oscuro)": dark
+    };
+    L.control.layers(baseMaps, undefined, { position: 'topleft' }).addTo(this.map);
 
     this.markersLayer.addTo(this.map);
     this.polylinesLayer.addTo(this.map);
@@ -127,7 +134,7 @@ export class GeoMapEngine {
     });
   }
 
-  public updateUserLocation(lat: number, lng: number, accuracy: number) {
+  public updateUserLocation(lat: number, lng: number, accuracy: number, speedKmH: number = 0) {
     if (!this.map) return;
 
     if (!this.userMarker) {
@@ -143,7 +150,13 @@ export class GeoMapEngine {
     } else {
       this.userMarker.setLatLng([lat, lng]);
       if (this.isAutoTracking) {
-         this.map.panTo([lat, lng], { animate: true, duration: 1.0 });
+         // ZOOM DIN?MICO POR TELEMETR?A (Velocidad)
+         let targetZoom = 17; // Velocidad de ciudad / Lento
+         if (speedKmH > 70) targetZoom = 14;      // Ruta / Visi?n extendida
+         else if (speedKmH > 40) targetZoom = 15; // Avenida r?pida
+         else if (speedKmH > 20) targetZoom = 16; // Conducci?n normal
+         
+         this.map.setView([lat, lng], targetZoom, { animate: true, duration: 1.0 });
       }
     }
   }
