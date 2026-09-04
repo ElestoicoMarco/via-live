@@ -463,3 +463,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
   color: var(--text-main) !important;
   border: 1px solid var(--border-subtle);
 }
+.dark-osm-layer {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
