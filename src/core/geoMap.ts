@@ -85,7 +85,7 @@ export class GeoMapEngine {
       "🛰️ Satélite HD": sat,
       "🕶️ Táctico (Oscuro)": dark
     };
-    L.control.layers(baseMaps, undefined, { position: 'topleft' }).addTo(this.map);
+    L.control.layers(baseMaps, undefined, { position: 'topright' }).addTo(this.map);
 
     this.markersLayer.addTo(this.map);
     this.polylinesLayer.addTo(this.map);

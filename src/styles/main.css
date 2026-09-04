@@ -466,3 +466,10 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .dark-osm-layer {
   filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
+.light-theme .toast {
+  background: var(--surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.leaflet-top { margin-top: calc(env(safe-area-inset-top) + 60px); }

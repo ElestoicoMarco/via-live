@@ -6,7 +6,7 @@ import { playSFX } from '../utils/audio'; // Nuevo motor SFX
 
 const notifiedIncidents = new Map<string, number>();
 const COOLDOWN_MS = 1000 * 30; // 30 segundos (solo pruebas) // 30 minutes
-const RADAR_RADIUS_KM = 10.0; // 10km para pruebas de escritorio // 600m (Reducido de 800m para pruebas)
+const RADAR_RADIUS_KM = 1.2; // 1200 metros // 600m (Reducido de 800m para pruebas)
 
 export function runProximityRadar(userLat: number, userLng: number) {
   const now = Date.now();
@@ -42,6 +42,6 @@ export function runProximityRadar(userLat: number, userLng: number) {
       playTTS(msg);
     }, 800);
     
-    toast(`Radar: ${m.label} a ${distMeters}m`, 'warn');
+    toast(`Radar: ${m.label} en ${inc.roadName || 'la v?a'} a ${distMeters}m`, 'warn');
   }
 }
