@@ -472,4 +472,4 @@ button:disabled{opacity:.45;cursor:not-allowed}
   border: 1px solid var(--border-subtle);
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
-.leaflet-top { margin-top: calc(env(safe-area-inset-top) + 60px); }
+.leaflet-top.leaflet-left { margin-top: calc(env(safe-area-inset-top) + 60px); } .leaflet-top.leaflet-right { margin-top: calc(env(safe-area-inset-top) + 205px); }
