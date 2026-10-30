@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -192,6 +192,28 @@
             <button class="hbtn h-tap" data-h="tap"><svg class="ic"><use href="#i-phone"/></svg>Leve</button>
             <button class="hbtn h-warn" data-h="warning"><svg class="ic"><use href="#i-alert"/></svg>Alerta</button>
             <button class="hbtn h-danger" data-h="danger"><svg class="ic"><use href="#i-alert"/></svg>Peligro</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h2 class="section-title">Radar de Proximidad</h2>
+          <div class="setting-row radar-setting-row">
+            <div class="radar-setting-header">
+              <div class="row-label"><svg class="ic"><use href="#i-nav"/></svg><span>Distancia de Aviso</span></div>
+              <span class="status-text ok" id="setRadarRadius">1200 m</span>
+            </div>
+            <input type="range" id="radarSlider" min="300" max="3000" step="100" value="1200" class="radar-slider">
+            <div class="radar-range-labels">
+              <span>300 m (Ciudad)</span>
+              <span>1.2 km</span>
+              <span>3.0 km (Ruta)</span>
+            </div>
+            <div class="radar-presets">
+              <button type="button" class="fchip r-preset" data-m="500">500 m</button>
+              <button type="button" class="fchip r-preset active" data-m="1200">1.2 km</button>
+              <button type="button" class="fchip r-preset" data-m="2000">2.0 km</button>
+              <button type="button" class="fchip r-preset" data-m="3000">3.0 km</button>
+            </div>
           </div>
         </section>
 

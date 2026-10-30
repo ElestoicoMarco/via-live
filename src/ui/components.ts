@@ -1,7 +1,8 @@
-﻿import { $, $$, escapeHTML, formatDistance, timeAgo, triggerHaptic, fmtTime, fmtLat, fmtLng, toast } from '../utils/helpers';
+import { $, $$, escapeHTML, formatDistance, timeAgo, triggerHaptic, fmtTime, fmtLat, fmtLng, toast } from '../utils/helpers';
 import { state } from '../store/state';
 import { TYPE_META, SEV_LABELS, Incident } from '../types/incident';
 import { GPSService } from '../services/gps';
+import { getRadarRadiusMeters, setRadarRadiusMeters } from '../services/radar';
 
 
 export const sheetOverlay = $('#sheetOverlay');
@@ -421,6 +422,48 @@ export function initUI() {
     triggerHaptic(b.dataset.h as any);
     toast(`Háptica ${b.dataset.h === 'tap' ? 'leve' : b.dataset.h === 'warning' ? 'media' : 'crítica'} enviada`, 'info');
   }));
+
+  // Control Dinámico de Umbral del Radar de Proximidad
+  const radarSlider = document.getElementById('radarSlider') as HTMLInputElement;
+  const radarLabel = document.getElementById('setRadarRadius');
+  const presetButtons = document.querySelectorAll('.r-preset');
+
+  const updateRadarUI = (meters: number, notify = false) => {
+    if (radarSlider) radarSlider.value = meters.toString();
+    const formatted = meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${meters} m`;
+    if (radarLabel) radarLabel.textContent = formatted;
+    setRadarRadiusMeters(meters);
+
+    presetButtons.forEach(btn => {
+      const bM = parseInt((btn as HTMLElement).dataset.m || '0', 10);
+      btn.classList.toggle('active', bM === meters);
+    });
+
+    if (notify) {
+      toast(`Perímetro de radar: ${formatted}`, 'info');
+      triggerHaptic('tap');
+    }
+  };
+
+  const initialRadius = getRadarRadiusMeters();
+  updateRadarUI(initialRadius, false);
+
+  radarSlider?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value, 10);
+    updateRadarUI(val, false);
+  });
+
+  radarSlider?.addEventListener('change', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value, 10);
+    updateRadarUI(val, true);
+  });
+
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const m = parseInt((btn as HTMLElement).dataset.m || '1200', 10);
+      updateRadarUI(m, true);
+    });
+  });
 
   // Botones de zoom ahora en main.ts
 

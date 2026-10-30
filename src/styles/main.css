@@ -1,4 +1,4 @@
-﻿:root{
+:root{
   --bg:#0d1117; --surface:#161b22; --surface-2:#1c2128;
   --border:#30363d; --border-subtle:#21262d;
   --accent:#f85149; --accent-warn:#e3b341; --accent-info:#58a6ff;
@@ -515,3 +515,44 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .leaflet-control-layers-list label:last-child {
   margin-bottom: 0 !important;
 }
+
+/* CONFIGURACIÓN DEL RADAR */
+.radar-setting-row {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 12px;
+}
+.radar-setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.radar-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  outline: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 4px 0;
+}
+.radar-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.radar-presets {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.radar-presets .r-preset {
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px;
+  font-size: 0.76rem;
+}
+
