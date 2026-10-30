@@ -465,6 +465,25 @@ export function initUI() {
     });
   });
 
+  // Modal del Manual de Usuario
+  const manualModal = document.getElementById('manualModal');
+  const openManual = () => {
+    triggerHaptic('tap');
+    manualModal?.classList.add('open');
+  };
+  const closeManual = () => {
+    triggerHaptic('tap');
+    manualModal?.classList.remove('open');
+  };
+
+  document.getElementById('btnOpenManualMap')?.addEventListener('click', openManual);
+  document.getElementById('btnOpenManualSettings')?.addEventListener('click', openManual);
+  document.getElementById('manualClose')?.addEventListener('click', closeManual);
+  document.getElementById('manualGotIt')?.addEventListener('click', closeManual);
+  manualModal?.addEventListener('click', (e) => {
+    if (e.target === manualModal) closeManual();
+  });
+
   // Botones de zoom ahora en main.ts
 
   $('#abClose').addEventListener('click', e => {

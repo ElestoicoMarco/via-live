@@ -46,6 +46,7 @@
   <symbol id="i-act" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
 </svg>
 
 <div id="app">
@@ -101,7 +102,12 @@
       <div class="chip glass" id="liveChip">
         <span class="live-dot"></span> EN VIVO · <b id="liveCount">0</b> incidentes
       </div>
-      <div class="chip glass mono" id="clock">--:--:--</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="chip glass" id="btnOpenManualMap" title="Manual de Usuario" aria-label="Manual de Usuario" style="padding:8px 10px;cursor:pointer">
+          <svg class="ic" style="width:16px;height:16px;color:var(--accent-info)"><use href="#i-book"/></svg>
+        </button>
+        <div class="chip glass mono" id="clock">--:--:--</div>
+      </div>
     </div>
 
     <div class="map-toolbar glass">
@@ -235,6 +241,14 @@
             </label>
           </div>
         </section>
+
+        <section class="settings-section">
+          <h2 class="section-title">Ayuda e Instrucciones</h2>
+          <button type="button" class="btn-primary" id="btnOpenManualSettings" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px">
+            <svg class="ic" style="width:18px;height:18px"><use href="#i-book"/></svg>
+            <span>Ver Manual de Uso e Instructivo</span>
+          </button>
+        </section>
       </div>
     </div>
   </section>
@@ -300,6 +314,62 @@
       <div class="modal-actions" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
         <button class="btn-primary" id="admNav" style="width:100%; background: #3b82f6;">Navegar hacia aquí</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL MANUAL DE USUARIO E INSTRUCTIVO -->
+  <div id="manualModal" class="modal-overlay">
+    <div class="modal-content glass manual-modal-content">
+      <div class="manual-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg class="ic" style="width:24px;height:24px;color:var(--accent-info)"><use href="#i-book"/></svg>
+          <div>
+            <h3 style="margin:0;font-size:1.15rem">Manual de Uso Oficial</h3>
+            <span style="font-size:0.75rem;color:var(--text-sub)">Vía-Live · Guía Operativa Rápida</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="manualClose" aria-label="Cerrar"><svg class="ic" style="width:18px;height:18px"><use href="#i-x"/></svg></button>
+      </div>
+
+      <div class="manual-scrollable">
+        <div class="manual-card">
+          <h4>🚀 1. ¿Qué hace Vía-Live?</h4>
+          <p>Es tu asistente vial en tiempo real: monitorea cortes de ruta, accidentes y obras activas en Jujuy. Traza rutas automáticas esquivando peligros y te avisa por voz, sonido y vibración antes de llegar a un incidente.</p>
+        </div>
+
+        <div class="manual-card">
+          <h4>🎛️ 2. Guía de Botones del Mapa</h4>
+          <ul class="manual-list">
+            <li><b>🔍 Barra Superior:</b> Escribe un destino para trazar la ruta más segura sin cortes viales.</li>
+            <li><b>🎯 Mira / Auto-GPS:</b> Centra la cámara satelital en tu posición exacta en tiempo real.</li>
+            <li><b>➕ / ➖ Zoom:</b> Acerca para ver alturas de calles o aleja para ver rutas provinciales.</li>
+            <li><b>🛰️ Capas:</b> Alterna entre <i>Mapa Estándar</i>, <i>Satélite HD</i> y modo <i>Táctico Oscuro</i>.</li>
+            <li><b>⚠️ Botón Rojo:</b> Abre el formulario para reportar un incidente manualmente en el mapa.</li>
+          </ul>
+        </div>
+
+        <div class="manual-card">
+          <h4>🎨 3. Código de Colores de Alertas</h4>
+          <div class="manual-color-row"><span class="m-dot dot-closed"></span><b>Rojo:</b> Corte total de ruta o bloqueo de calzada.</div>
+          <div class="manual-color-row"><span class="m-dot dot-acc"></span><b>Rojo Brillante:</b> Accidente vial o colisión activa.</div>
+          <div class="manual-color-row"><span class="m-dot dot-works"></span><b>Azul:</b> Trabajos de pavimentación, bacheo u obras.</div>
+          <div class="manual-color-row"><span class="m-dot dot-jam"></span><b>Amarillo:</b> Tránsito pesado o congestión con demora.</div>
+        </div>
+
+        <div class="manual-card">
+          <h4>🛡️ 4. Navegación Evasiva y Radar</h4>
+          <p><b>Escudo Inteligente:</b> Evalúa hasta 3 rutas simultáneas y elige automáticamente la que esté 100% libre de cortes a menos de 150m.</p>
+          <p><b>Radar Pasivo:</b> Configura el radio (300m a 3.0km) en <i>Config</i>. Al aproximarte a un corte, el celular emitirá un <b>bip sonoro</b>, <b>vibrará</b> y la <b>voz artificial</b> te leerá el nombre exacto de la calle.</p>
+          <p><b>Zoom Dinámico:</b> A más de 70 km/h la vista se aleja para visión panorámica; a menos de 20 km/h se acerca a nivel de calle.</p>
+        </div>
+
+        <div class="manual-card">
+          <h4>📄 5. Reportes y Partes PDF</h4>
+          <p>En la pestaña <b>Partes</b> puedes pulsar <b>Generar Parte</b> para descargar un documento PDF oficial con el resumen completo de incidentes activos para despachos de flota o supervisores.</p>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" id="manualGotIt" style="width:100%;margin-top:6px">Entendido, ir al mapa</button>
     </div>
   </div>
   <div id="toasts"></div>
